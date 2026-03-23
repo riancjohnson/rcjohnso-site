@@ -119,7 +119,7 @@
         photos = data
           .filter(f => f.type === 'file' && /\.(jpe?g|png|gif|webp)$/i.test(f.name) && f.name !== 'hero.jpg')
           .map(f => f.name)
-          .sort();
+          .sort().reverse();
       } catch (_) {
         try {
           const res = await fetch('photos.json');
