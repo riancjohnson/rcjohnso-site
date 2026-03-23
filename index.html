@@ -7,7 +7,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Inconsolata:wght@300;400;500&display=swap" rel="stylesheet" />
-
   <style>
     /* ─── DESIGN TOKENS ─── */
     :root {
@@ -331,12 +330,15 @@
 
       // Try the Netlify function first
       try {
-        const res = await fetch('/.netlify/functions/list-photos');
-        if (res.ok) {
-          photos = await res.json();
-        } else {
-          throw new Error('function not available');
-        }
+        const res = await fetch('https://api.github.com/repos/riancjohnson/rcjohnso-site/contents/images?per_page=1000');
+                  if (res.ok) {
+                                const data = await res.json();
+                                photos = data
+                                  .filter(f => f.type === 'file' && /\.(jpe?g|png|gif|webp)$/i.test(f.name) && f.name !== 'hero.jpg')
+                                  .map(f => f.name)
+                                  .sort();
+                  } else {
+                                throw new Error('API unavailable');
       } catch (_) {
         // Fallback to photos.json (local preview / non-Netlify hosting)
         try {
