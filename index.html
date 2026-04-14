@@ -26,10 +26,6 @@
     .social-header a { color: var(--muted); display: flex; transition: color 0.2s; }
     .social-header a:hover { color: var(--fg); }
     .social-header svg { width: 14px; height: 14px; fill: currentColor; }
-    /* =============================================
-       HERO — max-width controls the image size.
-       Change 1000px to make it bigger or smaller.
-       ============================================= */
     .hero-wrap { width: 100%; max-width: 1000px; margin: 0 auto; padding: 28px 24px 0; }
     .hero { width: 100%; aspect-ratio: 776 / 526; overflow: hidden; background: #111; }
     .hero-img { width: 100%; height: 100%; background-size: cover; background-position: center; transition: transform 0.7s ease; }
@@ -81,7 +77,7 @@
 
   <div class="hero-wrap">
     <div class="hero">
-      <a href="https://youtu.be/u0OY1RDe8Yg?si=Ku8MiQYyzIuCdOQH" target="_blank" rel="noopener">
+      <a href="https://www.youtube.com/watch?v=UVeMe9r3C3s" target="_blank" rel="noopener">
         <div class="hero-img" id="heroImg" role="img" aria-label="Hero photo"></div>
       </a>
     </div>
@@ -102,29 +98,31 @@
   </div>
 
   <script>
-    const REPO = 'riancjohnson/rcjohnso-site';
-    const API  = 'https://api.github.com/repos/' + REPO + '/contents/';
+    // Images are served directly from GitHub's CDN — not through Netlify.
+    // This keeps your Netlify bandwidth usage near zero.
+    const REPO   = 'riancjohnson/rcjohnso-site';
+    const BRANCH = 'main';
+    const RAW    = 'https://raw.githubusercontent.com/' + REPO + '/' + BRANCH + '/';
+    const API    = 'https://api.github.com/repos/' + REPO + '/contents/';
 
-    // ── Hero: reads the first image in the hero/ folder ──
+    // ── Hero: first image in the hero/ folder, served from GitHub CDN ──
     async function loadHero() {
       try {
         const res = await fetch(API + 'hero?per_page=10');
         if (!res.ok) throw new Error();
         const files = await res.json();
-        const img = files.find(f => f.type === 'file' && /\.(jpe?g|png|gif|webp)$/i.test(f.name));
-        if (img) {
-          document.getElementById('heroImg').style.backgroundImage = 'url("hero/' + img.name + '")';
+        const file = files.find(f => f.type === 'file' && /\.(jpe?g|png|gif|webp)$/i.test(f.name));
+        if (file) {
+          document.getElementById('heroImg').style.backgroundImage =
+            'url("' + RAW + 'hero/' + encodeURIComponent(file.name) + '")';
         }
-      } catch (_) {
-        // Fallback: use images/hero.jpg if the hero/ folder doesn't exist yet
-        document.getElementById('heroImg').style.backgroundImage = 'url("images/hero.jpg")';
-      }
+      } catch (_) {}
     }
 
-    // ── Grid: reads all images in the images/ folder ──
+    // ── Grid: all images in images/ folder, served from GitHub CDN ──
     async function loadPhotos() {
-      let photos = [];
       const grid = document.getElementById('photoGrid');
+      let photos = [];
       try {
         const res = await fetch(API + 'images?per_page=1000');
         if (!res.ok) throw new Error();
@@ -134,20 +132,16 @@
           .map(f => f.name)
           .sort().reverse();
       } catch (_) {
-        try {
-          const res = await fetch('photos.json');
-          photos = await res.json();
-        } catch (_) {
-          grid.innerHTML = '<p style="color:#555;font-size:0.75rem;padding:20px 0;">Unable to load photos.</p>';
-          return;
-        }
+        grid.innerHTML = '<p style="color:#555;font-size:0.75rem;padding:20px 0;">Unable to load photos.</p>';
+        return;
       }
       photos.forEach(filename => {
         const div = document.createElement('div');
         div.className = 'grid-item';
         const img = document.createElement('img');
         img.loading = 'lazy';
-        img.src = 'images/' + filename;
+        // Load directly from GitHub raw CDN — bypasses Netlify bandwidth entirely
+        img.src = RAW + 'images/' + encodeURIComponent(filename);
         img.alt = '';
         div.appendChild(img);
         grid.appendChild(div);
