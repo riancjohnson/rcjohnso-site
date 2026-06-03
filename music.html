@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Preserves — 2 Meg Songs</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Inconsolata:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:     #0a0a0a;
+      --fg:     #e8e6e2;
+      --muted:  #555;
+      --dim:    #1e1e1e;
+      --accent: #e8e6e2;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Inconsolata', monospace;
+      font-weight: 300;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 60px 24px 80px;
+    }
+
+    /* ── Header ── */
+    .artist {
+      font-family: 'IM Fell English', serif;
+      font-style: italic;
+      font-size: 3rem;
+      letter-spacing: 0.02em;
+      color: var(--fg);
+      line-height: 1;
+      text-align: center;
+      margin-bottom: 8px;
+      opacity: 0;
+      animation: fadeUp 0.6s ease 0.05s forwards;
+    }
+    .album {
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: #aaa;
+      text-align: center;
+      margin-bottom: 16px;
+      opacity: 0;
+      animation: fadeUp 0.6s ease 0.15s forwards;
+    }
+    .album-desc {
+      font-size: 0.68rem;
+      font-weight: 300;
+      letter-spacing: 0.04em;
+      color: #aaa;
+      text-align: center;
+      font-style: italic;
+      max-width: 420px;
+      line-height: 1.6;
+      margin-bottom: 48px;
+      opacity: 0;
+      animation: fadeUp 0.6s ease 0.2s forwards;
+    }
+
+    /* ── Player container ── */
+    .player {
+      width: 100%;
+      max-width: 600px;
+      opacity: 0;
+      animation: fadeUp 0.6s ease 0.3s forwards;
+    }
+
+    /* ── Now playing bar ── */
+    .now-playing {
+      border: 1px solid var(--dim);
+      padding: 20px 24px;
+      margin-bottom: 2px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .now-playing-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .now-playing-title {
+      font-family: 'IM Fell English', serif;
+      font-style: italic;
+      font-size: 1.4rem;
+      line-height: 1.2;
+      min-height: 1.7rem;
+    }
+
+    /* ── Progress bar ── */
+    .progress-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .time {
+      font-size: 0.65rem;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      width: 36px;
+      flex-shrink: 0;
+    }
+    .time.right { text-align: right; }
+    .progress-bar {
+      flex: 1;
+      height: 1px;
+      background: var(--dim);
+      position: relative;
+      cursor: pointer;
+    }
+    .progress-bar::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      background: var(--fg);
+      width: var(--progress, 0%);
+      transition: width 0.1s linear;
+    }
+    .progress-bar::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: var(--progress, 0%);
+      transform: translate(-50%, -50%);
+      width: 7px; height: 7px;
+      background: var(--fg);
+      border-radius: 50%;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .progress-bar:hover::after { opacity: 1; }
+
+    /* ── Controls ── */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      justify-content: center;
+      padding-top: 4px;
+    }
+    .ctrl-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 8px 16px;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      transition: color 0.2s;
+      font-family: 'Inconsolata', monospace;
+    }
+    .ctrl-btn:hover { color: var(--fg); }
+    .ctrl-btn.play-pause {
+      color: var(--fg);
+      font-size: 0.75rem;
+      padding: 8px 24px;
+      border-left: 1px solid var(--dim);
+      border-right: 1px solid var(--dim);
+    }
+
+    /* ── Track list ── */
+    .tracklist {
+      border: 1px solid var(--dim);
+      border-top: none;
+    }
+    .track {
+      display: flex;
+      align-items: center;
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--dim);
+      cursor: pointer;
+      transition: background 0.15s;
+      gap: 16px;
+    }
+    .track:last-child { border-bottom: none; }
+    .track:hover { background: rgba(255,255,255,0.03); }
+    .track.active { background: rgba(255,255,255,0.05); }
+    .track-num {
+      font-size: 0.6rem;
+      color: var(--muted);
+      width: 18px;
+      text-align: right;
+      flex-shrink: 0;
+      letter-spacing: 0.05em;
+    }
+    .track.active .track-num { color: var(--fg); }
+    .track-title {
+      flex: 1;
+      font-size: 0.82rem;
+      letter-spacing: 0.04em;
+      color: var(--fg);
+    }
+    .track-duration {
+      font-size: 0.62rem;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+      flex-shrink: 0;
+    }
+    .track.active .track-title { font-weight: 500; }
+
+    /* ── Playing indicator ── */
+    .playing-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--fg);
+      flex-shrink: 0;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .track.active.is-playing .playing-dot { opacity: 1; animation: pulse 1.2s ease infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    /* ── Back link ── */
+    .back {
+      margin-top: 48px;
+      font-size: 0.62rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+      opacity: 0;
+      animation: fadeUp 0.6s ease 0.4s forwards;
+    }
+    .back:hover { color: var(--fg); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Loading state ── */
+    .loading-msg {
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 0.12em;
+      padding: 32px 24px;
+      text-align: center;
+      border: 1px solid var(--dim);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="artist">The Preserves</div>
+  <div class="album">2 Meg Songs</div>
+  <div class="album-desc">An unfortunate relic of unemployed days in the late 90s, mostly recorded on a Tascam 4 track machine</div>
+
+  <div class="player" id="player">
+    <div class="loading-msg" id="loadingMsg">loading tracks&hellip;</div>
+  </div>
+
+  <a href="index.html" class="back">&#8592; back</a>
+
+  <audio id="audio"></audio>
+
+  <script>
+    const REPO   = 'riancjohnson/rcjohnso-site';
+    const BRANCH = 'main';
+    const RAW    = 'https://raw.githubusercontent.com/' + REPO + '/' + BRANCH + '/music/';
+    const API    = 'https://api.github.com/repos/' + REPO + '/contents/music';
+
+    const audio    = document.getElementById('audio');
+    const player   = document.getElementById('player');
+    let tracks     = [];
+    let current    = 0;
+    let isPlaying  = false;
+
+    // ── Format seconds as m:ss ──
+    function fmt(s) {
+      if (!s || isNaN(s)) return '--:--';
+      const m = Math.floor(s / 60);
+      const sec = Math.floor(s % 60);
+      return m + ':' + (sec < 10 ? '0' : '') + sec;
+    }
+
+    // ── Load track list from GitHub API ──
+    async function loadTracks() {
+      try {
+        const res = await fetch(API + '?per_page=100');
+        if (!res.ok) throw new Error();
+        const files = await res.json();
+        tracks = files
+          .filter(f => f.type === 'file' && /\.mp3$/i.test(f.name))
+          .map(f => ({
+            name: f.name,
+            title: f.name.replace(/^\d+[\.\-\s]+/, '').replace(/\.mp3$/i, ''),
+            url: RAW + encodeURIComponent(f.name),
+            duration: null
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name));
+
+        if (tracks.length === 0) {
+          document.getElementById('loadingMsg').textContent = 'No tracks found in music/ folder.';
+          return;
+        }
+
+        buildPlayer();
+        loadTrack(0, false);
+      } catch (e) {
+        document.getElementById('loadingMsg').textContent = 'Could not load tracks.';
+      }
+    }
+
+    // ── Build the player HTML ──
+    function buildPlayer() {
+      player.innerHTML = `
+        <div class="now-playing">
+          <div class="now-playing-label">now playing</div>
+          <div class="now-playing-title" id="npTitle">&mdash;</div>
+          <div class="progress-wrap">
+            <span class="time" id="timeCurrent">0:00</span>
+            <div class="progress-bar" id="progressBar"></div>
+            <span class="time right" id="timeTotal">--:--</span>
+          </div>
+          <div class="controls">
+            <button class="ctrl-btn" id="btnPrev">&#8592; prev</button>
+            <button class="ctrl-btn play-pause" id="btnPlay">play</button>
+            <button class="ctrl-btn" id="btnNext">next &#8594;</button>
+          </div>
+        </div>
+        <div class="tracklist" id="tracklist"></div>
+      `;
+
+      // Render track rows
+      const list = document.getElementById('tracklist');
+      tracks.forEach((t, i) => {
+        const row = document.createElement('div');
+        row.className = 'track';
+        row.dataset.index = i;
+        row.innerHTML =
+          '<span class="playing-dot"></span>' +
+          '<span class="track-num">' + (i + 1) + '</span>' +
+          '<span class="track-title">' + t.title + '</span>' +
+          '<span class="track-duration" id="dur-' + i + '">--:--</span>';
+        row.addEventListener('click', () => loadTrack(i, true));
+        list.appendChild(row);
+      });
+
+      // Wire controls
+      document.getElementById('btnPlay').addEventListener('click', togglePlay);
+      document.getElementById('btnPrev').addEventListener('click', prevTrack);
+      document.getElementById('btnNext').addEventListener('click', nextTrack);
+      document.getElementById('progressBar').addEventListener('click', seek);
+
+      // Audio events
+      audio.addEventListener('timeupdate', onTimeUpdate);
+      audio.addEventListener('loadedmetadata', onMetadata);
+      audio.addEventListener('ended', nextTrack);
+    }
+
+    // ── Load a track ──
+    function loadTrack(index, autoplay) {
+      current = index;
+      const t = tracks[index];
+      audio.src = t.url;
+      audio.load();
+
+      document.getElementById('npTitle').textContent = t.title;
+      document.getElementById('timeCurrent').textContent = '0:00';
+      document.getElementById('timeTotal').textContent = t.duration ? fmt(t.duration) : '--:--';
+      document.getElementById('progressBar').style.setProperty('--progress', '0%');
+
+      // Update track list highlight
+      document.querySelectorAll('.track').forEach((row, i) => {
+        row.classList.toggle('active', i === index);
+        row.classList.remove('is-playing');
+      });
+
+      if (autoplay) {
+        audio.play().then(() => {
+          isPlaying = true;
+          updatePlayBtn();
+          document.querySelectorAll('.track')[index].classList.add('is-playing');
+        }).catch(() => {});
+      } else {
+        isPlaying = false;
+        updatePlayBtn();
+      }
+    }
+
+    function togglePlay() {
+      if (isPlaying) {
+        audio.pause();
+        isPlaying = false;
+        document.querySelectorAll('.track')[current].classList.remove('is-playing');
+      } else {
+        audio.play().then(() => {
+          isPlaying = true;
+          document.querySelectorAll('.track')[current].classList.add('is-playing');
+        }).catch(() => {});
+      }
+      updatePlayBtn();
+    }
+
+    function updatePlayBtn() {
+      document.getElementById('btnPlay').textContent = isPlaying ? 'pause' : 'play';
+    }
+
+    function prevTrack() {
+      // If more than 3s in, restart; otherwise go back
+      if (audio.currentTime > 3) {
+        audio.currentTime = 0;
+      } else {
+        loadTrack(current > 0 ? current - 1 : tracks.length - 1, isPlaying);
+      }
+    }
+
+    function nextTrack() {
+      loadTrack(current < tracks.length - 1 ? current + 1 : 0, isPlaying);
+    }
+
+    function seek(e) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const pct = (e.clientX - rect.left) / rect.width;
+      if (audio.duration) audio.currentTime = pct * audio.duration;
+    }
+
+    function onTimeUpdate() {
+      if (!audio.duration) return;
+      const pct = (audio.currentTime / audio.duration) * 100;
+      document.getElementById('progressBar').style.setProperty('--progress', pct + '%');
+      document.getElementById('timeCurrent').textContent = fmt(audio.currentTime);
+    }
+
+    function onMetadata() {
+      const d = audio.duration;
+      document.getElementById('timeTotal').textContent = fmt(d);
+      tracks[current].duration = d;
+      const durEl = document.getElementById('dur-' + current);
+      if (durEl) durEl.textContent = fmt(d);
+    }
+
+    loadTracks();
+  </script>
+</body>
+</html>
