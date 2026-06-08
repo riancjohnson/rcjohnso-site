@@ -130,7 +130,7 @@
 
   <label>Number of players</label>
   <select id="playerCount">
-    <option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
+    <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
   </select>
 
   <div id="nameWrap"></div>
@@ -414,7 +414,14 @@ function finish(){
   const ranked=state.players.map(p=>({p,t:state.totals[p]}))
     .sort((a,b)=>a.t-b.t);
   const winTotal=ranked[0].t;
-  $('winnerName').textContent=ranked.filter(r=>r.t===winTotal).map(r=>r.p).join(' & ');
+  const crownLabel=$('results').querySelector('.crown small');
+  if(state.players.length===1){
+    crownLabel.textContent='Final Score';
+    $('winnerName').textContent=ranked[0].t+' yrs off';
+  }else{
+    crownLabel.textContent='Best in Show';
+    $('winnerName').textContent=ranked.filter(r=>r.t===winTotal).map(r=>r.p).join(' & ');
+  }
   $('finalBody').innerHTML=ranked.map((r,i)=>
     '<tr class="'+(r.t===winTotal?'win':'')+'"><td class="rk">'+(i+1)+'</td><td>'+r.p+'</td>'+
     '<td class="sc">'+r.t+' yrs off</td></tr>'
