@@ -97,6 +97,15 @@
   table.final .rk{font-family:'Bodoni Moda',serif;font-size:20px;width:34px;}
   table.final .sc{text-align:right;}
 
+  .castlist{margin-top:12px;}
+  .castrow{display:flex;align-items:baseline;gap:10px;padding:9px 4px;border-bottom:1px solid var(--line);}
+  .castrow .ci{font-family:'Bodoni Moda',serif;font-size:15px;width:26px;color:var(--dim);flex:none;}
+  .castrow .cn{flex:1;min-width:0;}
+  .castrow .cn .cnm{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .castrow .cn .cc{font-size:11px;color:var(--dim);font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .castrow .ca{font-family:'Bodoni Moda',serif;font-size:22px;color:var(--gold);flex:none;}
+  .castrow .ca.unk{color:var(--dim);font-size:12px;font-style:italic;}
+
   .crown{text-align:center;font-family:'Bodoni Moda',serif;font-style:italic;font-size:30px;color:var(--gold);margin:20px 0 4px;}
   .crown small{display:block;font-style:normal;font-family:'DM Mono';font-size:11px;letter-spacing:3px;color:var(--dim);text-transform:uppercase;margin-bottom:6px;}
 
@@ -168,6 +177,12 @@
   <div class="crown"><small>Best in Show</small><span id="winnerName"></span></div>
   <div class="rule gold"></div>
   <table class="final"><tbody id="finalBody"></tbody></table>
+
+  <div class="rule"></div>
+  <div class="reveal-cap center" style="margin-bottom:4px;">The Full Cast</div>
+  <div class="movie-sub" id="castSub"></div>
+  <div id="castList" class="castlist"></div>
+
   <button id="playAgain" style="margin-top:26px;">New Feature</button>
   <button class="ghost" id="sameMovie">Replay Same Film</button>
 </section>
@@ -272,21 +287,22 @@ async function loadMovie(id){
   const cast = (m.credits.cast||[])
     .sort((a,b)=>a.order-b.order)
     .filter(c=>c.id)
-    .slice(0,12);
-  // need birthdays — fetch person details for top billed until we have 5 with known DOB
-  const picked=[];
+    .slice(0,20);
+  // build a full top-10 billed list (with ages where DOB is known), and
+  // collect the first 5 that have a known birthday for actual gameplay.
+  const roster=[];   // up to 10 billed, for end-of-game reference
+  const picked=[];   // 5 playable (must have known age)
   for(const c of cast){
-    if(picked.length>=5) break;
-    try{
-      const p = await tmdb('/person/'+c.id);
-      if(p.birthday){
-        picked.push({
-          name:c.name, character:c.character,
-          profile:c.profile_path?('https://image.tmdb.org/t/p/w185'+c.profile_path):null,
-          age: ageAt(p.birthday, release)
-        });
-      }
-    }catch(e){/* skip */}
+    if(roster.length>=10 && picked.length>=5) break;
+    let birthday=null;
+    try{ const p=await tmdb('/person/'+c.id); birthday=p.birthday||null; }catch(e){}
+    const entry={
+      name:c.name, character:c.character,
+      profile:c.profile_path?('https://image.tmdb.org/t/p/w185'+c.profile_path):null,
+      age: birthday?ageAt(birthday, release):null
+    };
+    if(roster.length<10) roster.push(entry);
+    if(picked.length<5 && entry.age!=null) picked.push(entry);
   }
   if(picked.length<5){
     $('setup').classList.remove('hidden'); $('picker').classList.add('hidden');
@@ -295,6 +311,7 @@ async function loadMovie(id){
   }
   state.movie={title:m.title,year:(release||'').slice(0,4),release};
   state.cast=picked;
+  state.roster=roster;
   state.roleIdx=0; state.turnIdx=0; state.guesses={};
   state.totals={}; state.players.forEach(p=>state.totals[p]=0);
   state.roleResults=[];
@@ -401,6 +418,16 @@ function finish(){
   $('finalBody').innerHTML=ranked.map((r,i)=>
     '<tr class="'+(r.t===winTotal?'win':'')+'"><td class="rk">'+(i+1)+'</td><td>'+r.p+'</td>'+
     '<td class="sc">'+r.t+' yrs off</td></tr>'
+  ).join('');
+
+  // casting call: top 10 billed with ages at release
+  $('castSub').textContent=state.movie.title.toUpperCase()+' · '+state.movie.year;
+  $('castList').innerHTML=(state.roster||[]).map((c,i)=>
+    '<div class="castrow"><span class="ci">'+(i+1)+'</span>'+
+    '<span class="cn"><div class="cnm">'+escapeHtml(c.name)+'</div>'+
+    (c.character?'<div class="cc">as '+escapeHtml(c.character)+'</div>':'')+'</span>'+
+    (c.age!=null?'<span class="ca">'+c.age+'</span>':'<span class="ca unk">n/a</span>')+
+    '</div>'
   ).join('');
 }
 
